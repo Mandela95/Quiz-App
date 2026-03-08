@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import ChangePassword from "../../../AuthModule/Components/ChangePassword";
 import { setUser } from "../../../../Redux/UserSlice";
+import profileImage from "../../../../assets/images/profile.png";
 
 export default function Profile() {
   const dispatch = useDispatch();
@@ -55,7 +56,7 @@ export default function Profile() {
             <div className="relative">
               <img
                 className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
-                src="/src/assets/images/profile.png"
+                src={profileImage}
                 alt="Profile"
               />
             </div>
