@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import NavLogo from "../../../../assets/images/navLogo.png";
+import NavLogo from "../../../../assets/images/quiz.jpg";
 import profileImage from "../../../../assets/images/profile.png";
 import { useSelector, useDispatch } from "react-redux";
 import ChangePassword from "../../../AuthModule/Components/ChangePassword";
@@ -8,6 +8,7 @@ import ChangePassword from "../../../AuthModule/Components/ChangePassword";
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -16,6 +17,23 @@ export default function Navbar() {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const handleSignOut = () => {
     localStorage.removeItem("accessToken");
@@ -36,11 +54,13 @@ export default function Navbar() {
           <div className="relative flex items-center justify-around w-full h-16 lg:px-10">
             <div className="flex items-center justify-start flex-1">
               <div className="flex items-center flex-shrink-0">
-                <img
-                  className="w-auto h-8 ms-6 md:ms-0"
-                  src={NavLogo}
-                  alt="Your Company"
-                />
+                <Link to={"/dashboard"}>
+                  <img
+                    className="w-auto h-16 ms-6 md:ms-0"
+                    src={NavLogo}
+                    alt="Your Company"
+                  />
+                </Link>
               </div>
             </div>
             <div className="flex-1 hidden font-bold capitalize sm:flex title ms-auto">
@@ -64,7 +84,7 @@ export default function Navbar() {
                 </button>
               </div>
               {/*user data */}
-              <div className="relative ml-3">
+              <div className="relative ml-3" ref={menuRef}>
                 <div>
                   <button
                     type="button"
