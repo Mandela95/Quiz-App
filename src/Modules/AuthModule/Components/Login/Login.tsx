@@ -35,6 +35,7 @@ export default function Login() {
 
       toast.success(response.data.message);
       localStorage.setItem("accessToken", response.data.data.accessToken);
+      localStorage.setItem("userProfile", JSON.stringify(response.data.data.profile));
       dispatch(setToken(response.data.data.accessToken));
       dispatch(setUser(response.data.data.profile));
 

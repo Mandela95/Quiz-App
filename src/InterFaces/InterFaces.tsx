@@ -16,7 +16,6 @@ export interface StudentsInterface {
   email: string;
   status: boolean;
   role: string;
-  // students: [];
 }
 export interface GroupFormData {
   groupName: string;
@@ -47,7 +46,7 @@ export interface SingleStudentInterface {
   status: string;
   email: string;
 }
-export interface QuizzCreateInterface {
+export interface QuizCreateInterface {
   title: string;
   description: string;
   group: { value: string };
@@ -59,7 +58,7 @@ export interface QuizzCreateInterface {
   score_per_question: string;
 }
 
-export interface QuizzJoinInterface {
+export interface QuizJoinInterface {
   code: string;
 }
 export interface QuestionsInterface {

@@ -18,10 +18,31 @@ import questionBank from "../../../../../assets/images/Vault icon.svg";
 import vector from "../../../../../assets/images/Vector2.svg";
 import {
   GroupInterface,
-  QuizzCreateInterface,
 } from "../../../../../InterFaces/InterFaces";
 import { getBaseUrl } from "../../../../../Utils/Utils";
 import { Link, useNavigate } from "react-router-dom";
+
+interface SelectOption {
+  value: string | number;
+  label: string | number;
+}
+
+interface GroupSelectOption {
+  value: string;
+  label: string;
+}
+
+interface QuizFormData {
+  title?: string;
+  description?: string;
+  group?: string;
+  questions_number?: string | number;
+  difficulty?: string | number;
+  type?: string | number;
+  schadule?: string;
+  duration?: string | number;
+  score_per_question?: string | number;
+}
 
 export default function QuizzesList() {
   const navigate = useNavigate();
@@ -30,21 +51,14 @@ export default function QuizzesList() {
   const [upcomingQuizList, setUpcomingQuizList] = useState([]);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openSuccessModal, setOpenSuccessModal] = useState(false);
-  const [groups, setGroups] = useState([]);
-  const [groupDetails, setGroupDetails] = useState({});
-  const [selectedDuration, setSelectedDuration] = useState([]);
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [selectedScore, setSelectedScore] = useState([]);
-  const [selectedDifficulty, setSelectedDifficulty] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState([]);
+  const [groups, setGroups] = useState<GroupSelectOption[]>([]);
+  const [selectedDuration, setSelectedDuration] = useState<SelectOption | null>(null);
+  const [selectedQuestions, setSelectedQuestions] = useState<SelectOption | null>(null);
+  const [selectedScore, setSelectedScore] = useState<SelectOption | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<SelectOption | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<SelectOption | null>(null);
   const [succesCode, setSuccessCode] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState<{
-    name: string;
-    _id: string;
-  }>({
-    name: "",
-    _id: "",
-  });
+  const [selectedGroup, setSelectedGroup] = useState<GroupSelectOption | null>(null);
 
   const handleOpenQuiz = (quizId: string) => {
     navigate(`/dashboard/quizzes/${quizId}`);
@@ -67,18 +81,18 @@ export default function QuizzesList() {
     setOpenAddModal(false);
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: { title?: string; description?: string; schadule?: string }) => {
     const formData = {
       ...data,
       title: data.title,
       description: data.description,
-      group: selectedGroup.value,
-      questions_number: selectedQuestions.value,
-      difficulty: selectedDifficulty.value,
-      type: selectedCategory.value,
+      group: selectedGroup?.value,
+      questions_number: selectedQuestions?.value,
+      difficulty: selectedDifficulty?.value,
+      type: selectedCategory?.value,
       schadule: data.schadule,
-      duration: selectedDuration.value,
-      score_per_question: selectedScore.value,
+      duration: selectedDuration?.value,
+      score_per_question: selectedScore?.value,
     };
 
     if (openAddModal) {
@@ -157,8 +171,9 @@ export default function QuizzesList() {
     }
   }, [token]);
 
-  const getCompletedQuizz = async () => {
+  const getCompletedQuizz = useCallback(async () => {
     try {
+      // First try the completed endpoint
       const response = await axios.get(
         `${getBaseUrl()}/api/quiz/completed`,
         {
@@ -167,19 +182,33 @@ export default function QuizzesList() {
           },
         }
       );
-      const quizzes = response.data;
+      let quizzes = response.data;
+      
+      // If no completed quizzes from the dedicated endpoint, fetch all and filter
+      if (!quizzes || quizzes.length === 0) {
+        const allQuizzesResponse = await axios.get(
+          `${getBaseUrl()}/api/quiz`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        // Filter for closed quizzes
+        quizzes = allQuizzesResponse.data.filter(
+          (quiz: { status?: string }) => quiz.status === "closed"
+        );
+      }
+      
       setCompletedQuizList(quizzes);
-      quizzes.forEach((quiz) => {
-        getGroupDetails(quiz.group);
-      });
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        toast.error(error.response.data.message || "Failed to book");
+        toast.error(error.response.data.message || "Failed to fetch completed quizzes");
       }
     }
-  };
+  }, [token]);
 
-  const getUpcomingQuizz = async () => {
+  const getUpcomingQuizz = useCallback(async () => {
     try {
       const response = await axios.get(
         `${getBaseUrl()}/api/quiz/incomming`,
@@ -189,15 +218,19 @@ export default function QuizzesList() {
           },
         }
       );
-      setUpcomingQuizList(response.data);
+      // Filter out closed quizzes from upcoming
+      const openQuizzes = response.data.filter(
+        (quiz: { status?: string }) => quiz.status !== "closed"
+      );
+      setUpcomingQuizList(openQuizzes);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        toast.error(error.response.data.message || "Failed to book");
+        toast.error(error.response.data.message || "Failed to fetch upcoming quizzes");
       }
     }
-  };
+  }, [token]);
 
-  const createQuizSubmit = async (formData: QuizzCreateInterface) => {
+  const createQuizSubmit = async (formData: QuizFormData) => {
     try {
       const response = await axios.post(
         `${getBaseUrl()}/api/quiz`,
@@ -223,7 +256,9 @@ export default function QuizzesList() {
       setOpenSuccessModal(true);
       setSuccessCode(response.data.data.code);
     } catch (error) {
-      toast.error(error.response.data.message);
+      if (axios.isAxiosError(error) && error.response) {
+        toast.error(error.response.data.message);
+      }
     }
   };
 
@@ -256,7 +291,7 @@ export default function QuizzesList() {
     getCompletedQuizz();
     getAllGroups();
     getUpcomingQuizz();
-  }, []);
+  }, [getCompletedQuizz, getAllGroups, getUpcomingQuizz]);
 
   return (
     <>
@@ -442,7 +477,7 @@ export default function QuizzesList() {
                   components={animatedComponents}
                   options={groups}
                   value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e)}
+                  onChange={(e) => setSelectedGroup(e as GroupSelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{
@@ -457,7 +492,7 @@ export default function QuizzesList() {
                   components={animatedComponents}
                   options={questions}
                   value={selectedQuestions}
-                  onChange={(e) => setSelectedQuestions(e)}
+                  onChange={(e) => setSelectedQuestions(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{
@@ -472,7 +507,7 @@ export default function QuizzesList() {
                   components={animatedComponents}
                   options={difficulty}
                   value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e)}
+                  onChange={(e) => setSelectedDifficulty(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{
@@ -490,7 +525,7 @@ export default function QuizzesList() {
                 components={animatedComponents}
                 options={type}
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e)}
+                onChange={(e) => setSelectedCategory(e as SelectOption)}
                 menuPortalTarget={document.body}
                 className="container mr-4 mb-4"
                 styles={{
@@ -501,7 +536,7 @@ export default function QuizzesList() {
                 }}
               />
 
-              <label className="font-bold">Schedule</label>
+              <label className="font-bold">schadule</label>
               <div className="mb-4">
                 <input
                   type="datetime-local"
@@ -522,7 +557,7 @@ export default function QuizzesList() {
                   components={animatedComponents}
                   options={score}
                   value={selectedScore}
-                  onChange={(e) => setSelectedScore(e)}
+                  onChange={(e) => setSelectedScore(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{
@@ -537,7 +572,7 @@ export default function QuizzesList() {
                   components={animatedComponents}
                   options={durations}
                   value={selectedDuration}
-                  onChange={(e) => setSelectedDuration(e)}
+                  onChange={(e) => setSelectedDuration(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{

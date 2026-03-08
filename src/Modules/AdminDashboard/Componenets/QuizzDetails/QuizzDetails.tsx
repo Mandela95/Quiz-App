@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
 import Select from "react-select";
@@ -13,32 +13,61 @@ import makeAnimated from "react-select/animated";
 import { toast } from "react-toastify";
 import { getBaseUrl } from "../../../../Utils/Utils";
 import { useSelector } from "react-redux";
-import { QuizzCreateInterface } from "../../../../InterFaces/InterFaces";
+
+interface QuizDetailsType {
+  title?: string;
+  description?: string;
+  schadule?: string;
+  duration?: string;
+  questions_number?: number;
+  score_per_question?: string;
+  difficulty?: string;
+  type?: string;
+  group?: string;
+  status?: string;
+  code?: string;
+  participants?: number;
+}
+
+interface SelectOption {
+  value: string | number;
+  label: string | number;
+}
+
+interface QuizUpdateData {
+  title?: string;
+  description?: string;
+  schadule?: string;
+  duration?: string | number;
+  questions_number?: string | number;
+  score_per_question?: string | number;
+  difficulty?: string | number;
+}
 
 export default function QuizzDetails() {
   const animatedComponents = makeAnimated();
   const { id } = useParams<{ id: string }>();
-  const [quizDetails, setQuizDetails] = useState({});
+  const [quizDetails, setQuizDetails] = useState<QuizDetailsType>({});
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [selectedDuration, setSelectedDuration] = useState([]);
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [selectedScore, setSelectedScore] = useState([]);
-  const [selectedDifficulty, setSelectedDifficulty] = useState([]);
+  const [selectedDuration, setSelectedDuration] = useState<SelectOption | null>(null);
+  const [selectedQuestions, setSelectedQuestions] = useState<SelectOption | null>(null);
+  const [selectedScore, setSelectedScore] = useState<SelectOption | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<SelectOption | null>(null);
 
   const handleClose = () => {
     setOpenEditModal(false);
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: { title?: string; description?: string; schadule?: string }) => {
     const formData = {
       ...data,
       title: data.title,
       description: data.description,
-      questions_number: selectedQuestions.value,
-      difficulty: selectedDifficulty.value,
+      questions_number: selectedQuestions?.value,
+      difficulty: selectedDifficulty?.value,
       schadule: data.schadule,
-      duration: selectedDuration.value,
-      score_per_question: selectedScore.value,
+      duration: selectedDuration?.value,
+      score_per_question: selectedScore?.value,
     };
 
     if (openEditModal) {
@@ -54,14 +83,14 @@ export default function QuizzDetails() {
     { value: "50", label: "50" },
     { value: "60", label: "60" },
   ];
-  // const questions = [
-  //   {value: 1, label: 1},
-  //   {value: 5, label: 5},
-  //   {value: 10, label: 10},
-  //   {value: 15, label: 15},
-  //   {value: 20, label: 20},
-  //   {value: 25, label: 25},
-  // ]
+  const questions = [
+    { value: 1, label: 1 },
+    { value: 5, label: 5 },
+    { value: 10, label: 10 },
+    { value: 15, label: 15 },
+    { value: 20, label: 20 },
+    { value: 25, label: 25 },
+  ];
   const score = [
     { value: "1", label: "1" },
     { value: "2", label: "2" },
@@ -69,23 +98,18 @@ export default function QuizzDetails() {
     { value: "4", label: "4" },
     { value: "5", label: "5" },
   ];
-  // const difficulty = [
-  //   {value: 'easy', label: 'easy'},
-  //   {value: 'medium', label: 'medium'},
-  //   {value: 'hard', label: 'hard'},
-  // ]
-  // const type = [
-  //   {value: 'FE', label: 'FE'},
-  //   {value: 'BE', label: 'BE'},
-  //   {value: 'DO', label: 'DO'},
-  // ]
+  const difficulty = [
+    { value: "easy", label: "easy" },
+    { value: "medium", label: "medium" },
+    { value: "hard", label: "hard" },
+  ];
 
   const { token } = useSelector(
     (state: { user: { token: string } }) => state.user
   );
   
 
-  const getQuizzDetails = async () => {
+  const getQuizzDetails = useCallback(async () => {
     try {
       const response = await axios.get(
         `${getBaseUrl()}/api/quiz/${id}`,
@@ -95,40 +119,92 @@ export default function QuizzDetails() {
           },
         }
       );
-      console.log(response.data);
       setQuizDetails(response.data);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         toast.error(error.response.data.message[0]);
       }
     }
-  };
+  }, [id, token]);
 
-  const updateQuizz = async (formData: QuizzCreateInterface) => {
+  const updateQuizz = async (formData: QuizUpdateData) => {
     try {
+      // Only send fields that have values to avoid API errors
+      // Note: questions_number cannot be changed after quiz creation
+      const updateData: Record<string, string | number | undefined> = {};
+      
+      if (formData.title) updateData.title = formData.title;
+      if (formData.description) updateData.description = formData.description;
+      if (formData.schadule) updateData.schadule = formData.schadule;
+      if (formData.duration) updateData.duration = formData.duration;
+      if (formData.score_per_question) updateData.score_per_question = formData.score_per_question;
+      // Don't send questions_number or difficulty as they cannot be changed after creation
+      
       const response = await axios.put(
         `${getBaseUrl()}/api/quiz/${id}`,
-        {
-          title: formData.title,
-          description: formData.description,
-          // questions_number: formData.questions_number,
-          // difficulty: formData.difficulty,
-          schadule: formData.schadule,
-          score_per_question: formData.score_per_question,
-          duration: formData.duration,
-        },
+        updateData,
         {
           headers: {
-            authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
       handleClose();
-      toast.success(response.data.message);
+      toast.success(response.data.message || "Quiz updated successfully");
       getQuizzDetails();
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        toast.error(error.response.data.message[0]);
+        const errorMsg = error.response.data.message;
+        toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg || "Failed to update quiz");
+      }
+    }
+  };
+
+  // Close quiz - this moves it from "upcoming" to "completed"
+  const closeQuiz = async () => {
+    const confirmClose = window.confirm(
+      "Are you sure you want to close this quiz? Students will no longer be able to take it."
+    );
+    if (!confirmClose) return;
+
+    try {
+      const response = await axios.put(
+        `${getBaseUrl()}/api/quiz/${id}`,
+        { status: "closed" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success(response.data.message || "Quiz closed successfully");
+      getQuizzDetails();
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data.message;
+        toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg || "Failed to close quiz");
+      }
+    }
+  };
+
+  // Re-open a closed quiz
+  const reopenQuiz = async () => {
+    try {
+      const response = await axios.put(
+        `${getBaseUrl()}/api/quiz/${id}`,
+        { status: "open" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success(response.data.message || "Quiz reopened successfully");
+      getQuizzDetails();
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorMsg = error.response.data.message;
+        toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg || "Failed to reopen quiz");
       }
     }
   };
@@ -137,7 +213,7 @@ export default function QuizzDetails() {
 
   useEffect(() => {
     getQuizzDetails();
-  }, [id]);
+  }, [getQuizzDetails]);
 
   return (
     <>
@@ -191,10 +267,10 @@ export default function QuizzDetails() {
             {quizDetails.title}
           </h1>
           <p className="mt-3 mb-5 font-semibold text-center sm:text-left">
-            {new Date(quizDetails.schadule).toLocaleString("en-US", {
+            {quizDetails.schadule ? new Date(quizDetails.schadule).toLocaleString("en-US", {
               dateStyle: "short",
               timeStyle: "short",
-            })}
+            }) : "Not schaduled"}
           </p>
           <div className="container flex flex-row h-10 mb-5 border border-gray-300 rounded-lg lg:w-8/12">
             <p className="w-7/12 h-full p-2 font-bold bg-orange-100 rounded-lg">
@@ -224,11 +300,58 @@ export default function QuizzDetails() {
             </p>
             <p className="p-2 ml-2 font-semibold">{quizDetails.description}</p>
           </div>
-          {/* <div className="flex flex-row w-8/12 h-10 mb-5 border border-gray-300 rounded-lg">
-            <p className="w-7/12 h-full p-2 font-bold bg-orange-100 rounded-lg">Question bank used</p>
-            <p className="p-2 ml-2 font-semibold">{quizDetails}</p>
-          </div> */}
-          <div className="flex justify-end font-bold">
+          
+          {/* Status */}
+          <div className="container flex flex-row h-10 mb-5 border border-gray-300 rounded-lg lg:w-8/12">
+            <p className="w-7/12 h-full p-2 font-bold bg-orange-100 rounded-lg">
+              Status
+            </p>
+            <p className={`p-2 ml-2 font-semibold capitalize ${
+              quizDetails.status === "closed" ? "text-red-600" : "text-green-600"
+            }`}>
+              {quizDetails.status || "open"}
+            </p>
+          </div>
+          
+          {/* Quiz Code */}
+          {quizDetails.code && (
+            <div className="container flex flex-row h-10 mb-5 border border-gray-300 rounded-lg lg:w-8/12">
+              <p className="w-7/12 h-full p-2 font-bold bg-orange-100 rounded-lg">
+                Quiz Code
+              </p>
+              <p className="p-2 ml-2 font-semibold font-mono">{quizDetails.code}</p>
+            </div>
+          )}
+          
+          {/* Participants */}
+          {quizDetails.participants !== undefined && (
+            <div className="container flex flex-row h-10 mb-5 border border-gray-300 rounded-lg lg:w-8/12">
+              <p className="w-7/12 h-full p-2 font-bold bg-orange-100 rounded-lg">
+                Participants
+              </p>
+              <p className="p-2 ml-2 font-semibold">{quizDetails.participants}</p>
+            </div>
+          )}
+          
+          {/* Action Buttons */}
+          <div className="flex justify-end font-bold gap-3">
+            {quizDetails.status !== "closed" ? (
+              <button
+                onClick={closeQuiz}
+                className="flex items-center justify-around px-4 p-2 text-white bg-red-600 border rounded-full hover:bg-red-700"
+              >
+                <i className="fa-solid fa-lock mr-2"></i>
+                <p>Close Quiz</p>
+              </button>
+            ) : (
+              <button
+                onClick={reopenQuiz}
+                className="flex items-center justify-around px-4 p-2 text-white bg-green-600 border rounded-full hover:bg-green-700"
+              >
+                <i className="fa-solid fa-unlock mr-2"></i>
+                <p>Reopen Quiz</p>
+              </button>
+            )}
             <button
               onClick={() => {
                 setOpenEditModal(true);
@@ -278,46 +401,45 @@ export default function QuizzDetails() {
                 />
               </div>
 
-              {/* <div className="flex justify-between font-bold">
+              <div className="flex justify-between font-bold">
                 <label className="ml-7">No. of questions</label>
                 <label className="mr-20">Difficulty</label>
-              </div> */}
+              </div>
 
-              {/* <div className="flex justify-between w-full mb-4">
-                    
-                    <Select
-                      closeMenuOnSelect={true}
-                      components={animatedComponents}
-                      options={questions}
-                      value={selectedQuestions}
-                      onChange={(e) => setSelectedQuestions(e)}
-                      menuPortalTarget={document.body}
-                      className="container mr-4"
-                      styles={{
-                        menuPortal: (base) => ({
-                          ...base,
-                          zIndex: 9999,
-                        }),
-                      }}
-                    />
-                    <Select
-                      closeMenuOnSelect={true}
-                      components={animatedComponents}
-                      options={difficulty}
-                      value={selectedDifficulty}
-                      onChange={(e) => setSelectedDifficulty(e)}
-                      menuPortalTarget={document.body}
-                      className="container mr-4"
-                      styles={{
-                        menuPortal: (base) => ({
-                          ...base,
-                          zIndex: 9999,
-                        }),
-                      }}
-                    />
-                  </div> */}
+              <div className="flex justify-between w-full mb-4">
+                <Select
+                  closeMenuOnSelect={true}
+                  components={animatedComponents}
+                  options={questions}
+                  value={selectedQuestions}
+                  onChange={(e) => setSelectedQuestions(e as SelectOption)}
+                  menuPortalTarget={document.body}
+                  className="container mr-4"
+                  styles={{
+                    menuPortal: (base) => ({
+                      ...base,
+                      zIndex: 9999,
+                    }),
+                  }}
+                />
+                <Select
+                  closeMenuOnSelect={true}
+                  components={animatedComponents}
+                  options={difficulty}
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e as SelectOption)}
+                  menuPortalTarget={document.body}
+                  className="container mr-4"
+                  styles={{
+                    menuPortal: (base) => ({
+                      ...base,
+                      zIndex: 9999,
+                    }),
+                  }}
+                />
+              </div>
 
-              <label className="font-bold">Schedule</label>
+              <label className="font-bold">schadule</label>
               <div className="mb-4">
                 <input
                   type="datetime-local"
@@ -338,7 +460,7 @@ export default function QuizzDetails() {
                   components={animatedComponents}
                   options={score}
                   value={selectedScore}
-                  onChange={(e) => setSelectedScore(e)}
+                  onChange={(e) => setSelectedScore(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{
@@ -353,7 +475,7 @@ export default function QuizzDetails() {
                   components={animatedComponents}
                   options={durations}
                   value={selectedDuration}
-                  onChange={(e) => setSelectedDuration(e)}
+                  onChange={(e) => setSelectedDuration(e as SelectOption)}
                   menuPortalTarget={document.body}
                   className="container mr-4"
                   styles={{

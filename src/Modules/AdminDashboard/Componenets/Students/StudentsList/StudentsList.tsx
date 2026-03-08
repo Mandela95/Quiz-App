@@ -7,10 +7,11 @@ import {
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import {
-  StudentFormData,
   StudentsInterface,
+  GroupInterface,
 } from "../../../../../InterFaces/InterFaces";
 import { getBaseUrl } from "../../../../../Utils/Utils";
 import NoData from "../../../../SharedModules/Components/NoData/NoData";
@@ -20,17 +21,16 @@ import "react-responsive-pagination/themes/classic.css";
 import style from "../Students.module.css";
 
 const StudentsList = () => {
-  const token =
-    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjdkNTVlNmM4NWYxZWNkYmMyNmY1YzIiLCJlbWFpbCI6Im9tYXJiYXplZWRAZ21haWwuY29tIiwicm9sZSI6Ikluc3RydWN0b3IiLCJpYXQiOjE3MTk2NzE4NzUsImV4cCI6MTcyMzI3MTg3NX0.HQjkFkOkJDB1pr01-_4YgK5DcKs--7k8jSvXP4IP8rE";
+  const { token } = useSelector(
+    (state: { user: { token: string } }) => state.user
+  );
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setopenViewModal] = useState(false);
   const { handleSubmit, reset } = useForm();
 
   const [studentList, setStudentList] = useState([]);
-  const [studentId, setStudentId] = useState("");
-  const [showView, setShowView] = useState(false);
-  // const [selectedStudent, setSelectedStudent] = useState("");
+  const [groups, setGroups] = useState<GroupInterface[]>([]);
   const [selectedStudentFirstName, setSelectedStudentFirstName] = useState("");
   const [selectedStudentLastName, setSelectedStudentLastName] = useState("");
   const [selectedStudentEmail, setSelectedStudentEmail] = useState("");
@@ -46,35 +46,38 @@ const StudentsList = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const pageSize = 16;
 
-  // get all groups to display
+  // Get all groups
+  const getAllGroups = useCallback(async () => {
+    try {
+      const res = await axios.get(`${getBaseUrl()}/api/group`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroups(res.data);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        toast.error(error.response.data.message || "Failed to fetch groups");
+      }
+    }
+  }, [token]);
+
+  // Get all students
   const getAllStudents = useCallback(async () => {
     try {
       const res = await axios.get(`${getBaseUrl()}/api/student`, {
         headers: {
-          Authorization: token,
+          Authorization: `Bearer ${token}`,
         },
       });
       setStudentList(res.data);
-      // setStudents(res.data);
       setTotalPages(Math.ceil(res.data.length / pageSize));
-      console.log(res.data);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         toast.error(error.response.data.message);
       }
     }
   }, [token]);
-
-  // variable submmition for add , delete and view
-  const onSubmit = async (formData: StudentFormData) => {
-    if (openDeleteModal) {
-      await handleDelete(studentId);
-    } else if (openViewModal) {
-      await handleShowStudent(studentId);
-    } else if (openAddModal) {
-      await handleAdd(formData);
-    }
-  };
 
   // close the modal for all
   const handleClose = () => {
@@ -90,17 +93,16 @@ const StudentsList = () => {
     setSelectedStudentLastName(student.last_name);
     setSelectedStudentEmail(student.email);
     setSelectedStudentRole(student.role);
-    setShowView(true);
   };
 
   // delete the selected student
   const handleDelete = async () => {
     try {
       const res = await axios.delete(
-        `https://upskilling-egypt.com:3005/api/student/${selectedDeletedStudents._id}`,
+        `${getBaseUrl()}/api/student/${selectedDeletedStudents._id}`,
         {
           headers: {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -123,7 +125,8 @@ const StudentsList = () => {
   
   useEffect(() => {
     getAllStudents();
-  }, [getAllStudents]);
+    getAllGroups();
+  }, [getAllStudents, getAllGroups]);
 
   return (
     <>
@@ -133,9 +136,13 @@ const StudentsList = () => {
           <section className="my-4">
             <h1 className="mb-3 text-xl text-bold">Students List</h1>
             <ul className={`${style.groups}`}>
-              <li>Group 1</li>
-              <li>Group 2</li>
-              <li>Group 3</li>
+              {groups.length > 0 ? (
+                groups.map((group: GroupInterface) => (
+                  <li key={group._id}>{group.name}</li>
+                ))
+              ) : (
+                <li>No groups available</li>
+              )}
             </ul>
             <ul className={`${style.responsiveTableProjects}`}>
               {students.length > 0 ? (
@@ -219,7 +226,11 @@ const StudentsList = () => {
                   ? "Student Details"
                   : "Add Student"}
             </DialogTitle>
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-3">
+            <form onSubmit={handleSubmit(() => {
+              if (openDeleteModal) {
+                handleDelete();
+              }
+            })} className="mt-3">
               {openDeleteModal ? (
                 <p className="text-sm text-gray-700">
                   Are you sure you want to delete this student?
@@ -238,7 +249,6 @@ const StudentsList = () => {
                 <button
                   type="submit"
                   className="px-4 py-2 mr-2 text-white bg-blue-600 rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                  onClick={() => handleDelete(student._id)}
                 >
                   {openDeleteModal ? "Delete" : openViewModal ? "View" : "Add"}
                 </button>

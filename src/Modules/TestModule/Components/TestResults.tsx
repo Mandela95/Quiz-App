@@ -53,11 +53,54 @@ export default function TestResults() {
       const res = await axios.get(`${getBaseUrl()}/api/quiz/result`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setResults(res.data);
-      setTotalPages(Math.ceil(res.data.length / pageSize));
+      
+      let resultsData = res.data;
+      
+      // If no results from the endpoint, try to get closed quizzes as fallback
+      if (!resultsData || resultsData.length === 0) {
+        const allQuizzesResponse = await axios.get(
+          `${getBaseUrl()}/api/quiz`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        
+        // Transform closed quizzes into result format
+        const closedQuizzes = allQuizzesResponse.data.filter(
+          (quiz: { status?: string }) => quiz.status === "closed"
+        );
+        
+        resultsData = closedQuizzes.map((quiz: {
+          _id: string;
+          title: string;
+          group?: string;
+          difficulty?: string;
+          type?: string;
+          status?: string;
+          score_per_question?: number;
+          createdAt?: string;
+          participants?: number;
+        }) => ({
+          quiz: {
+            _id: quiz._id,
+            title: quiz.title,
+            group: quiz.group || "",
+            difficulty: quiz.difficulty || "",
+            type: quiz.type || "",
+            instructor: "",
+            status: quiz.status || "closed",
+            score_per_question: quiz.score_per_question || 0,
+            createdAt: quiz.createdAt || "",
+          },
+          participants: quiz.participants ? Array(quiz.participants).fill("participant") : [],
+        }));
+      }
+      
+      setResults(resultsData);
+      setTotalPages(Math.ceil(resultsData.length / pageSize));
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        toast.error(error.response.data.message || "Failed to book");
+        toast.error(error.response.data.message || "Failed to fetch results");
       }
     }
   }, [token]);

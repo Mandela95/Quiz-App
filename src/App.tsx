@@ -8,6 +8,7 @@ import QuestionsList from "./Modules/AdminDashboard/Componenets/Quizzes/Question
 import QuizzesList from "./Modules/AdminDashboard/Componenets/Quizzes/QuizzesList/QuizzesList";
 import ResultsList from "./Modules/AdminDashboard/Componenets/Results/ResultsList/ResultsList";
 import StudentsList from "./Modules/AdminDashboard/Componenets/Students/StudentsList/StudentsList";
+import Profile from "./Modules/SharedModules/Components/Profile/Profile";
 import ChangePassword from "./Modules/AuthModule/Components/ChangePassword";
 import ForgetPassword from "./Modules/AuthModule/Components/ForgetPassword/ForgetPassword";
 import Login from "./Modules/AuthModule/Components/Login/Login";
@@ -20,14 +21,19 @@ import TDashboardLayout from "./Modules/SharedModules/Components/Layouts/TDashbo
 import NoData from "./Modules/SharedModules/Components/NoData/NoData";
 import TestDashboard from "./Modules/TestModule/Components/TestDashboard/TestDashboard";
 import TestQuizzes from "./Modules/TestModule/Components/TestQuizzes/TestQuizzes";
+import TakeQuiz from "./Modules/TestModule/Components/TakeQuiz/TakeQuiz";
 import TestResults from "./Modules/TestModule/Components/TestResults";
-import { setToken } from "./Redux/UserSlice";
+import { setToken, setUser } from "./Redux/UserSlice";
 export default function App() {
   const dispatch = useDispatch();
   useEffect(() => {
     const storedToken = localStorage.getItem("accessToken");
+    const storedUser = localStorage.getItem("userProfile");
     if (storedToken) {
       dispatch(setToken(storedToken));
+    }
+    if (storedUser) {
+      dispatch(setUser(JSON.parse(storedUser)));
     }
   }, [dispatch]);
   const routes = createHashRouter([
@@ -96,6 +102,10 @@ export default function App() {
           path: "questions",
           element: <QuestionsList />,
         },
+        {
+          path: "profile",
+          element: <Profile />,
+        },
       ],
     },
     {
@@ -112,8 +122,16 @@ export default function App() {
           element: <TestQuizzes />,
         },
         {
+          path: "quizzes/:id",
+          element: <TakeQuiz />,
+        },
+        {
           path: "results",
           element: <TestResults />,
+        },
+        {
+          path: "profile",
+          element: <Profile />,
         },
       ],
     },

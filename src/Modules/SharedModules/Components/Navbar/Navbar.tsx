@@ -1,14 +1,29 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import NavLogo from "../../../../assets/images/navLogo.png";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const { user } = useSelector((s) => s.user);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((s: { user: { user: { first_name: string; last_name: string; role: string; email: string } | null } }) => s.user);
+  
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userProfile");
+    dispatch({ type: "user/setToken", payload: "" });
+    dispatch({ type: "user/setUser", payload: null });
+    navigate("/");
+  };
+
+  const getProfilePath = () => {
+    return user?.role === "Instructor" ? "/dashboard/profile" : "/test/profile";
   };
 
   return (
@@ -78,30 +93,32 @@ export default function Navbar() {
                   aria-orientation="vertical"
                   aria-labelledby="user-menu-button"
                 >
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700"
+                  <Link
+                    to={getProfilePath()}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     id="user-menu-item-0"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     Your Profile
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700"
+                  </Link>
+                  <Link
+                    to="/change-password"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     id="user-menu-item-1"
+                    onClick={() => setIsMenuOpen(false)}
                   >
-                    Settings
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-700"
+                    Change Password
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     id="user-menu-item-2"
                   >
                     Sign out
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
