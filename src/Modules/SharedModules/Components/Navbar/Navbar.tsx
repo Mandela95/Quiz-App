@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import NavLogo from "../../../../assets/images/navLogo.png";
+import profileImage from "../../../../assets/images/profile.png";
 import { useSelector, useDispatch } from "react-redux";
 import ChangePassword from "../../../AuthModule/Components/ChangePassword";
 
@@ -75,7 +76,7 @@ export default function Navbar() {
                   >
                     <img
                       className="rounded-full size-11"
-                      src="/src/assets/images/profile.png"
+                      src={profileImage}
                       alt=""
                     />
                     <span>
