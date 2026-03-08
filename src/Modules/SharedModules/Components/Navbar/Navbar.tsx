@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import NavLogo from "../../../../assets/images/navLogo.png";
 import { useSelector, useDispatch } from "react-redux";
+import ChangePassword from "../../../AuthModule/Components/ChangePassword";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -73,7 +75,7 @@ export default function Navbar() {
                   >
                     <img
                       className="rounded-full size-11"
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                      src="/src/assets/images/profile.png"
                       alt=""
                     />
                     <span>
@@ -100,23 +102,42 @@ export default function Navbar() {
                     id="user-menu-item-0"
                     onClick={() => setIsMenuOpen(false)}
                   >
+                    <i className="fa-solid fa-user mr-2"></i>
                     Your Profile
                   </Link>
-                  <Link
-                    to="/change-password"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  
+                  {/* Show student-specific menu items */}
+                  {user?.role === "Student" && (
+                    <Link
+                      to="/test/quizzes"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <i className="fa-solid fa-clipboard-question mr-2"></i>
+                      My Quizzes
+                    </Link>
+                  )}
+                  
+                  <button
+                    onClick={() => {
+                      setIsChangePasswordModalOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     id="user-menu-item-1"
-                    onClick={() => setIsMenuOpen(false)}
                   >
+                    <i className="fa-solid fa-key mr-2"></i>
                     Change Password
-                  </Link>
+                  </button>
                   <button
                     onClick={handleSignOut}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                     id="user-menu-item-2"
                   >
+                    <i className="fa-solid fa-sign-out-alt mr-2"></i>
                     Sign out
                   </button>
                 </div>
@@ -125,6 +146,12 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+      
+      {/* Change Password Modal */}
+      <ChangePassword
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
     </>
   );
 }

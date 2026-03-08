@@ -18,7 +18,11 @@ export default function Login() {
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormTypes>();
+  } = useForm<LoginFormTypes>({
+    defaultValues: {
+      email: "mohamedelseady247@gmail.com",
+      password: "Test@123",
+  }});
   const dispatch = useDispatch();
 
   const onSubmit = async (data: LoginFormTypes) => {

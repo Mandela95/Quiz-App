@@ -1,5 +1,4 @@
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 import axios from "axios";
@@ -13,13 +12,14 @@ interface ChangePasswordForm {
   password_new_confirm: string;
 }
 
-export default function ChangePassword() {
-  const navigate = useNavigate();
+interface ChangePasswordProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps) {
   const { token } = useSelector(
     (state: { user: { token: string } }) => state.user
-  );
-  const { user } = useSelector(
-    (state: { user: { user: { role: string } | null } }) => state.user
   );
 
   // Password visibility states
@@ -31,6 +31,7 @@ export default function ChangePassword() {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordForm>();
 
@@ -49,12 +50,8 @@ export default function ChangePassword() {
         }
       );
       toast.success(response.data.message || "Password changed successfully!");
-      // Navigate back to appropriate dashboard
-      if (user?.role === "Instructor") {
-        navigate("/dashboard");
-      } else {
-        navigate("/test/quizzes");
-      }
+      reset(); // Reset form
+      onClose(); // Close modal
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         toast.error(error.response.data.message || "Failed to change password");
@@ -62,26 +59,42 @@ export default function ChangePassword() {
     }
   };
 
-  const handleGoBack = () => {
-    navigate(-1);
+  const handleModalClose = () => {
+    reset(); // Reset form when closing
+    onClose();
   };
 
+  // Don't render if modal is not open
+  if (!isOpen) return null;
+
   return (
-    <div className="container mx-auto p-6 mt-6">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleModalClose}
+    >
+      <div 
+        className="max-w-md w-full mx-4 bg-white rounded-lg shadow-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-6">
-          <div className="flex items-center justify-center">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <i className="fa-solid fa-key text-blue-600 text-2xl"></i>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mr-3">
+                <i className="fa-solid fa-key text-blue-600 text-xl"></i>
+              </div>
+              <div>
+                <h1 className="text-white text-lg font-bold">Change Password</h1>
+                <p className="text-blue-100 text-sm">Update your account password</p>
+              </div>
             </div>
+            <button
+              onClick={handleModalClose}
+              className="text-white hover:text-blue-200 transition-colors"
+            >
+              <i className="fa-solid fa-times text-xl"></i>
+            </button>
           </div>
-          <h1 className="text-center text-white text-xl font-bold mt-4">
-            Change Password
-          </h1>
-          <p className="text-center text-blue-100 mt-1 text-sm">
-            Enter your current password and choose a new one
-          </p>
         </div>
 
         {/* Form */}
@@ -155,7 +168,7 @@ export default function ChangePassword() {
           </div>
 
           {/* Confirm New Password */}
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="password_new_confirm"
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -194,12 +207,28 @@ export default function ChangePassword() {
             )}
           </div>
 
+          {/* Password Requirements */}
+          <div className="mb-6">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs font-medium text-gray-700 mb-2">
+                Password Requirements:
+              </p>
+              <ul className="text-xs text-gray-600 space-y-1">
+                <li><i className="fa-solid fa-check text-green-500 mr-1"></i>At least 6 characters</li>
+                <li><i className="fa-solid fa-check text-green-500 mr-1"></i>One uppercase letter</li>
+                <li><i className="fa-solid fa-check text-green-500 mr-1"></i>One lowercase letter</li>
+                <li><i className="fa-solid fa-check text-green-500 mr-1"></i>One number</li>
+                <li><i className="fa-solid fa-check text-green-500 mr-1"></i>One special character</li>
+              </ul>
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed text-sm"
             >
               {isSubmitting ? (
                 <>
@@ -215,45 +244,14 @@ export default function ChangePassword() {
             </button>
             <button
               type="button"
-              onClick={handleGoBack}
-              className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+              onClick={handleModalClose}
+              className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm"
             >
-              <i className="fa-solid fa-arrow-left mr-2"></i>
+              <i className="fa-solid fa-times mr-2"></i>
               Cancel
             </button>
           </div>
         </form>
-
-        {/* Password Requirements */}
-        <div className="px-6 pb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">
-              Password Requirements:
-            </p>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>
-                <i className="fa-solid fa-check text-green-500 mr-2"></i>
-                At least 6 characters long
-              </li>
-              <li>
-                <i className="fa-solid fa-check text-green-500 mr-2"></i>
-                Contains at least one uppercase letter
-              </li>
-              <li>
-                <i className="fa-solid fa-check text-green-500 mr-2"></i>
-                Contains at least one lowercase letter
-              </li>
-              <li>
-                <i className="fa-solid fa-check text-green-500 mr-2"></i>
-                Contains at least one number
-              </li>
-              <li>
-                <i className="fa-solid fa-check text-green-500 mr-2"></i>
-                Contains at least one special character
-              </li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );

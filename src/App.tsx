@@ -9,7 +9,6 @@ import QuizzesList from "./Modules/AdminDashboard/Componenets/Quizzes/QuizzesLis
 import ResultsList from "./Modules/AdminDashboard/Componenets/Results/ResultsList/ResultsList";
 import StudentsList from "./Modules/AdminDashboard/Componenets/Students/StudentsList/StudentsList";
 import Profile from "./Modules/SharedModules/Components/Profile/Profile";
-import ChangePassword from "./Modules/AuthModule/Components/ChangePassword";
 import ForgetPassword from "./Modules/AuthModule/Components/ForgetPassword/ForgetPassword";
 import Login from "./Modules/AuthModule/Components/Login/Login";
 import Register from "./Modules/AuthModule/Components/Register/Register";
@@ -62,10 +61,6 @@ export default function App() {
         {
           path: "reset-password",
           element: <ResetPassword />,
-        },
-        {
-          path: "change-password",
-          element: <ChangePassword />,
         },
       ],
     },

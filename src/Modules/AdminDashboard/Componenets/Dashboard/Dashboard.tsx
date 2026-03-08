@@ -1,6 +1,6 @@
 import axios from "axios";
-
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getBaseUrl } from "../../../../Utils/Utils";
 import { useSelector } from "react-redux";
 import {
@@ -58,10 +58,13 @@ export default function Dashboard() {
         <div className="left border border-gray-300 w-full p-4">
           <div className="header flex items-center justify-between p-4">
             <h4>Upcoming 5 quizzes</h4>
-            <p className="flex items-center justify-center">
+            <Link 
+              to="/dashboard/quizzes"
+              className="flex items-center justify-center text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
+            >
               see all quizzes
               <i className="fa-solid fa-arrow-right-long mx-1"></i>
-            </p>
+            </Link>
           </div>
           <hr />
           <div className="list p-2">
@@ -110,10 +113,13 @@ export default function Dashboard() {
         <div className="left border border-gray-300 w-full p-4">
           <div className="header flex items-center justify-between p-4">
             <h4>Top 5 Students</h4>
-            <p className="flex items-center justify-center">
+            <Link 
+              to="/dashboard/students"
+              className="flex items-center justify-center text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
+            >
               see all Students
               <i className="fa-solid fa-arrow-right-long mx-1"></i>
-            </p>
+            </Link>
           </div>
           <hr />
           <div className="list p-2">
