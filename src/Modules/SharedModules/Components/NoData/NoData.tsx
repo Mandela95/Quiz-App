@@ -1,3 +1,3 @@
 export default function NoData() {
-  return <div>NoDataaaaaa</div>;
+  return <div>No Data</div>;
 }

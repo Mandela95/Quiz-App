@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import "./SideBar.css";
 
 export default function SideBar() {
-  let [breakPoint, setBreakpoint] = useState("no");
+  const [breakPoint, setBreakpoint] = useState("no");
   const [isCollapse, setIsCollapse] = useState(false);
   const [windowWidth, setWindowWidth] = useState(0);
   const [toggleIcon, setToggleIcon] = useState(false);
